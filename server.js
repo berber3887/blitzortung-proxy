@@ -75,61 +75,59 @@ function nearestPlace(lat, lon) {
 let rawMessages = [];
 let lastRaw = null;
 
-// ── Décodeur Blitzortung v4 — nettoyage + regex ───────────────
+// ── Décodeur Blitzortung v5 ───────────────────────────────────
 function blitzDecode(data) {
     const str = typeof data === 'string' ? data : data.toString();
     if (!str || str.length === 0) return null;
 
-    // Essai 1 : JSON direct propre
+    // Essai 1 : JSON direct
     try {
         const parsed = JSON.parse(str);
         if (parsed && parsed.lat !== undefined) return parsed;
     } catch(e) {}
 
-    // Essai 2 : nettoyer les caractères non-ASCII parasites
-    // Garde uniquement : chiffres, lettres ASCII, ponctuation JSON standard
+    // Essai 2 : extraction intelligente
+    // Les clés JSON ("lat", "lon", "time") sont lisibles
+    // Les valeurs numériques ont des caractères spéciaux intercalés
+    // On extrait la zone après chaque clé et on garde seulement chiffres + signe + point
     try {
-        // Remplace les caractères spéciaux (> 127) par rien
-        // SAUF à l'intérieur des valeurs numériques où ils remplacent des chiffres
-        // Stratégie : on nettoie et on reconstruit un JSON valide
+        function extractNum(src, key) {
+            // Trouve la position de la clé dans la chaîne
+            const keyIdx = src.indexOf('"' + key);
+            if (keyIdx === -1) return null;
+            // Avance jusqu'après les deux-points et caractères non-numériques
+            let i = keyIdx + key.length + 1;
+            while (i < src.length && !/[-\d]/.test(src[i])) i++;
+            // Collecte les caractères numériques (chiffres, point, signe)
+            // Ignore les caractères spéciaux intercalés
+            let num = '';
+            let hasDecimal = false;
+            let started = false;
+            while (i < src.length && num.length < 20) {
+                const c = src[i];
+                const code = src.charCodeAt(i);
+                if (c === '-' && !started) { num += c; started = true; }
+                else if (c >= '0' && c <= '9') { num += c; started = true; }
+                else if (c === '.' && !hasDecimal && started) { num += c; hasDecimal = true; }
+                else if (code > 127) { /* ignore caractère spécial */ }
+                else if (started) break; // fin du nombre
+                i++;
+            }
+            return num ? parseFloat(num) : null;
+        }
 
-        // Nettoyer : garder ASCII imprimable seulement
-        let clean = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i);
-            if (code >= 32 && code <= 126) {
-                clean += str[i];
-            } else if (code > 127) {
-                // Caractère spécial — peut représenter un chiffre manquant
-                // On l'ignore (les chiffres autour restent)
-                clean += '';
+        const lat  = extractNum(str, 'lat');
+        const lon  = extractNum(str, 'lon');
+        const time = extractNum(str, 'time');
+        const pol  = extractNum(str, 'pol');
+
+        if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+            if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                return { time: time || Date.now()*1000000, lat, lon, pol: pol || 0 };
             }
         }
-
-        // Extraire lat/lon du JSON nettoyé
-        const latMatch = clean.match(/"lat[^"]*"\s*[:]+\s*(-?[\d.]+)/);
-        const lonMatch = clean.match(/"lon[^"]*"\s*[:]+\s*(-?[\d.]+)/);
-        const timeMatch = clean.match(/"time"\s*[:]+\s*([\d]+)/);
-        const polMatch  = clean.match(/"pol[^"]*"\s*[:]+\s*(-?[\d]+)/);
-
-        if (latMatch && lonMatch) {
-            const lat = parseFloat(latMatch[1]);
-            const lon = parseFloat(lonMatch[1]);
-            const ts  = timeMatch ? parseInt(timeMatch[1]) : Date.now() * 1000000;
-
-            // Validation basique des coordonnées
-            if (isNaN(lat) || isNaN(lon)) return null;
-            if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
-
-            return {
-                time: ts,
-                lat:  lat,
-                lon:  lon,
-                pol:  polMatch ? parseInt(polMatch[1]) : 0,
-            };
-        }
     } catch(e) {
-        console.log('Erreur décodage:', e.message);
+        console.log('Erreur décodage v5:', e.message);
     }
 
     return null;
