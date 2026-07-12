@@ -75,7 +75,7 @@ function nearestPlace(lat, lon) {
 let rawMessages = [];
 let lastRaw = null;
 
-// ── Décodeur Blitzortung v5 ───────────────────────────────────
+// ── Décodeur Blitzortung v6 ───────────────────────────────────
 function blitzDecode(data) {
     const str = typeof data === 'string' ? data : data.toString();
     if (!str || str.length === 0) return null;
@@ -86,34 +86,35 @@ function blitzDecode(data) {
         if (parsed && parsed.lat !== undefined) return parsed;
     } catch(e) {}
 
-    // Essai 2 : extraction intelligente
-    // Les clés JSON ("lat", "lon", "time") sont lisibles
-    // Les valeurs numériques ont des caractères spéciaux intercalés
-    // On extrait la zone après chaque clé et on garde seulement chiffres + signe + point
+    // Essai 2 : extraction caractère par caractère
     try {
         function extractNum(src, key) {
-            // Trouve la position de la clé dans la chaîne
             const keyIdx = src.indexOf('"' + key);
             if (keyIdx === -1) return null;
-            // Avance jusqu'après les deux-points et caractères non-numériques
             let i = keyIdx + key.length + 1;
-            while (i < src.length && !/[-\d]/.test(src[i])) i++;
-            // Collecte les caractères numériques (chiffres, point, signe)
-            // Ignore les caractères spéciaux intercalés
+            // Passe les caractères non-utiles jusqu'au début de la valeur
+            while (i < src.length && src[i] !== ':' && src[i] !== '=') i++;
+            i++; // passe le ':'
+            // Collecte : ignore les spéciaux, garde chiffres/signe/point
+            // Continue sur max 30 caractères de la source
             let num = '';
+            let hasSign = false;
             let hasDecimal = false;
-            let started = false;
-            while (i < src.length && num.length < 20) {
-                const c = src[i];
-                const code = src.charCodeAt(i);
-                if (c === '-' && !started) { num += c; started = true; }
-                else if (c >= '0' && c <= '9') { num += c; started = true; }
-                else if (c === '.' && !hasDecimal && started) { num += c; hasDecimal = true; }
-                else if (code > 127) { /* ignore caractère spécial */ }
-                else if (started) break; // fin du nombre
-                i++;
+            let hasDigit = false;
+            const end = Math.min(i + 30, src.length);
+            for (let j = i; j < end; j++) {
+                const c = src[j];
+                const code = src.charCodeAt(j);
+                if (code > 127) continue; // ignore spéciaux
+                if (c === '-' && !hasSign && !hasDigit) { num += c; hasSign = true; }
+                else if (c >= '0' && c <= '9') { num += c; hasDigit = true; }
+                else if (c === '.' && !hasDecimal && hasDigit) { num += c; hasDecimal = true; }
+                else if (hasDigit && (c === ',' || c === '"' || c === '}' || c === ' ')) break;
+                else if (hasDigit && code < 32) break;
             }
-            return num ? parseFloat(num) : null;
+            if (!hasDigit) return null;
+            const val = parseFloat(num);
+            return isNaN(val) ? null : val;
         }
 
         const lat  = extractNum(str, 'lat');
@@ -121,13 +122,13 @@ function blitzDecode(data) {
         const time = extractNum(str, 'time');
         const pol  = extractNum(str, 'pol');
 
-        if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        if (lat !== null && lon !== null) {
             if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
                 return { time: time || Date.now()*1000000, lat, lon, pol: pol || 0 };
             }
         }
     } catch(e) {
-        console.log('Erreur décodage v5:', e.message);
+        console.log('Erreur décodage v6:', e.message);
     }
 
     return null;
