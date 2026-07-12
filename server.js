@@ -75,41 +75,37 @@ function nearestPlace(lat, lon) {
 let rawMessages = [];
 let lastRaw = null;
 
-// ── Décodeur obfuscation Blitzortung v2 ──────────────────────
+// ── Décodeur Blitzortung v3 — extraction regex ────────────────
 function blitzDecode(data) {
-    // Essai 1 : JSON direct
+    const str = typeof data === 'string' ? data : data.toString();
+    if (!str || str.length === 0) return null;
+
+    // Essai 1 : JSON direct propre
     try {
-        const parsed = JSON.parse(data);
-        if (parsed && (parsed.lat !== undefined || parsed.time !== undefined)) return parsed;
+        const parsed = JSON.parse(str);
+        if (parsed && parsed.lat !== undefined) return parsed;
     } catch(e) {}
 
-    // Essai 2 : décodage LZW Blitzortung
+    // Essai 2 : extraction regex sur le texte partiellement lisible
+    // Format observé : {"time":17838..., "lat":28.05..., "lon":-77.8...
     try {
-        const str = typeof data === 'string' ? data : data.toString();
-        if (!str || str.length === 0) return null;
+        // Extraire time
+        const timeMatch = str.match(/"time"\s*[":]+\s*([\d]+)/);
+        // Extraire lat — cherche le nombre après "lat"
+        const latMatch  = str.match(/"lat[^"]*"\s*[":Ć]+\s*(-?[\d]+\.[\d]+)/);
+        // Extraire lon
+        const lonMatch  = str.match(/"lon[^"]*"\s*[":Ć]+\s*(-?[\d]+\.[\d]+)/);
+        // Extraire pol (polarité)
+        const polMatch  = str.match(/"pol[^"]*"\s*[":Ć]+\s*(-?[\d]+)/);
 
-        const dict = {};
-        let currChar = str[0];
-        let oldPhrase = currChar;
-        const out = [currChar];
-        let code = 256;
-        let phrase;
-
-        for (let i = 1; i < str.length; i++) {
-            const currCode = str.charCodeAt(i);
-            if (currCode < 256) {
-                phrase = str[i];
-            } else {
-                phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
-            }
-            out.push(phrase);
-            currChar = phrase[0];
-            dict[code] = oldPhrase + currChar;
-            code++;
-            oldPhrase = phrase;
+        if (latMatch && lonMatch) {
+            return {
+                time: timeMatch ? parseInt(timeMatch[1]) : Date.now() * 1000000,
+                lat:  parseFloat(latMatch[1]),
+                lon:  parseFloat(lonMatch[1]),
+                pol:  polMatch ? parseInt(polMatch[1]) : 0,
+            };
         }
-        const result = out.join('');
-        return JSON.parse(result);
     } catch(e) {}
 
     return null;
