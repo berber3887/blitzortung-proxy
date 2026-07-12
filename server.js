@@ -176,53 +176,49 @@ function connectBlitzortung() {
 }
 
 // ── API REST ──────────────────────────────────────────────────
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Content-Type', 'application/json; charset=utf-8');
+app.use(function(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     next();
 });
 
-// GET /strikes — tous les impacts récents
-app.get('/strikes', (req, res) => {
-    const now = Date.now()/1000;
-    const minutes = parseInt(req.query.minutes) || 60;
-    const filtered = strikes.filter(s => (now - s.ts) <= minutes*60);
+app.get('/', function(req, res) {
+    res.end(JSON.stringify({ name: 'Blitzortung Proxy', version: '1.0', endpoints: ['/strikes', '/health'] }));
+});
 
-    // Compteurs
-    const today = new Date().toISOString().slice(0,10);
-    const month = new Date().toISOString().slice(0,7);
-    const year  = new Date().getFullYear().toString();
+app.get('/health', function(req, res) {
+    res.end(JSON.stringify({ status: 'ok', connected: connected, last_seen: lastSeen, total_strikes: strikes.length }));
+});
 
-    res.json({
-        status:     'ok',
-        source:     'blitzortung.org',
-        center:     { lat: CENTER_LAT, lon: CENTER_LON, name: 'Sérezin-de-la-Tour' },
-        radius_km:  RADIUS_KM,
-        generated:  new Date().toISOString(),
-        connected,
-        last_seen:  lastSeen,
+app.get('/strikes', function(req, res) {
+    var now     = Date.now() / 1000;
+    var minutes = parseInt(req.query.minutes) || 60;
+    var filtered = strikes.filter(function(s) { return (now - s.ts) <= minutes * 60; });
+    var today   = new Date().toISOString().slice(0, 10);
+    var month   = new Date().toISOString().slice(0, 7);
+    var year    = new Date().getFullYear().toString();
+    var result  = {
+        status:      'ok',
+        source:      'blitzortung.org',
+        center:      { lat: CENTER_LAT, lon: CENTER_LON, name: 'Sérezin-de-la-Tour' },
+        radius_km:   RADIUS_KM,
+        generated:   new Date().toISOString(),
+        connected:   connected,
+        last_seen:   lastSeen,
         counts: {
-            today:      strikes.filter(s=>s.datetime.startsWith(today)).length,
-            this_month: strikes.filter(s=>s.datetime.startsWith(month)).length,
-            this_year:  strikes.filter(s=>s.datetime.startsWith(year)).length,
+            today:      strikes.filter(function(s){ return s.datetime.startsWith(today); }).length,
+            this_month: strikes.filter(function(s){ return s.datetime.startsWith(month); }).length,
+            this_year:  strikes.filter(function(s){ return s.datetime.startsWith(year);  }).length,
             total:      strikes.length,
         },
         last_strike: strikes[0] || null,
         lightnings:  filtered,
-    });
-});
-
-// GET /health — statut
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', connected, last_seen: lastSeen, total_strikes: strikes.length });
-});
-
-app.get('/', (req, res) => {
-    res.json({ name: 'Blitzortung Proxy', version: '1.0', endpoints: ['/strikes', '/health'] });
+    };
+    res.end(JSON.stringify(result));
 });
 
 // ── Démarrage ─────────────────────────────────────────────────
-app.listen(PORT, () => {
-    console.log(`Serveur démarré sur port ${PORT}`);
+app.listen(PORT, '0.0.0.0', function() {
+    console.log('Serveur démarré sur port ' + PORT);
     connectBlitzortung();
 });
