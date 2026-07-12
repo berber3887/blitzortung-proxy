@@ -217,8 +217,23 @@ app.get('/strikes', function(req, res) {
     res.end(JSON.stringify(result));
 });
 
+// ── Keep-alive — empêche Render de s'endormir ─────────────────
+const https = require('https');
+function keepAlive() {
+    const url = process.env.RENDER_EXTERNAL_URL || 'https://blitzortung-proxy.onrender.com';
+    https.get(url + '/health', (res) => {
+        console.log(`[${new Date().toISOString()}] Keep-alive ping OK (${res.statusCode})`);
+    }).on('error', (e) => {
+        console.log(`[${new Date().toISOString()}] Keep-alive ping erreur: ${e.message}`);
+    });
+}
+// Ping toutes les 10 minutes
+setInterval(keepAlive, 10 * 60 * 1000);
+
 // ── Démarrage ─────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', function() {
     console.log('Serveur démarré sur port ' + PORT);
     connectBlitzortung();
+    // Premier ping après 1 minute
+    setTimeout(keepAlive, 60 * 1000);
 });
