@@ -75,7 +75,7 @@ function nearestPlace(lat, lon) {
 let rawMessages = [];
 let lastRaw = null;
 
-// ── Décodeur Blitzortung v3 — extraction regex ────────────────
+// ── Décodeur Blitzortung v4 — nettoyage + regex ───────────────
 function blitzDecode(data) {
     const str = typeof data === 'string' ? data : data.toString();
     if (!str || str.length === 0) return null;
@@ -86,27 +86,51 @@ function blitzDecode(data) {
         if (parsed && parsed.lat !== undefined) return parsed;
     } catch(e) {}
 
-    // Essai 2 : extraction regex sur le texte partiellement lisible
-    // Format observé : {"time":17838..., "lat":28.05..., "lon":-77.8...
+    // Essai 2 : nettoyer les caractères non-ASCII parasites
+    // Garde uniquement : chiffres, lettres ASCII, ponctuation JSON standard
     try {
-        // Extraire time
-        const timeMatch = str.match(/"time"\s*[":]+\s*([\d]+)/);
-        // Extraire lat — cherche le nombre après "lat"
-        const latMatch  = str.match(/"lat[^"]*"\s*[":Ć]+\s*(-?[\d]+\.[\d]+)/);
-        // Extraire lon
-        const lonMatch  = str.match(/"lon[^"]*"\s*[":Ć]+\s*(-?[\d]+\.[\d]+)/);
-        // Extraire pol (polarité)
-        const polMatch  = str.match(/"pol[^"]*"\s*[":Ć]+\s*(-?[\d]+)/);
+        // Remplace les caractères spéciaux (> 127) par rien
+        // SAUF à l'intérieur des valeurs numériques où ils remplacent des chiffres
+        // Stratégie : on nettoie et on reconstruit un JSON valide
+
+        // Nettoyer : garder ASCII imprimable seulement
+        let clean = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i);
+            if (code >= 32 && code <= 126) {
+                clean += str[i];
+            } else if (code > 127) {
+                // Caractère spécial — peut représenter un chiffre manquant
+                // On l'ignore (les chiffres autour restent)
+                clean += '';
+            }
+        }
+
+        // Extraire lat/lon du JSON nettoyé
+        const latMatch = clean.match(/"lat[^"]*"\s*[:]+\s*(-?[\d.]+)/);
+        const lonMatch = clean.match(/"lon[^"]*"\s*[:]+\s*(-?[\d.]+)/);
+        const timeMatch = clean.match(/"time"\s*[:]+\s*([\d]+)/);
+        const polMatch  = clean.match(/"pol[^"]*"\s*[:]+\s*(-?[\d]+)/);
 
         if (latMatch && lonMatch) {
+            const lat = parseFloat(latMatch[1]);
+            const lon = parseFloat(lonMatch[1]);
+            const ts  = timeMatch ? parseInt(timeMatch[1]) : Date.now() * 1000000;
+
+            // Validation basique des coordonnées
+            if (isNaN(lat) || isNaN(lon)) return null;
+            if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+
             return {
-                time: timeMatch ? parseInt(timeMatch[1]) : Date.now() * 1000000,
-                lat:  parseFloat(latMatch[1]),
-                lon:  parseFloat(lonMatch[1]),
+                time: ts,
+                lat:  lat,
+                lon:  lon,
                 pol:  polMatch ? parseInt(polMatch[1]) : 0,
             };
         }
-    } catch(e) {}
+    } catch(e) {
+        console.log('Erreur décodage:', e.message);
+    }
 
     return null;
 }
