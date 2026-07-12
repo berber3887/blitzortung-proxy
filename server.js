@@ -71,27 +71,48 @@ function nearestPlace(lat, lon) {
     return bd < 15 ? best.n : `${lat.toFixed(3)}°N ${lon.toFixed(3)}°E`;
 }
 
-// ── Décodeur obfuscation Blitzortung ─────────────────────────
+// ── Stockage debug ────────────────────────────────────────────
+let rawMessages = [];
+let lastRaw = null;
+
+// ── Décodeur obfuscation Blitzortung v2 ──────────────────────
 function blitzDecode(data) {
-    const d = data.split ? data.split('') : Array.from(data);
-    if (!d.length) return null;
-    let c = d[0], f = c;
-    const g = [c];
-    const e = {};
-    let h = 256, o = h;
-    for (let i = 1; i < d.length; i++) {
-        const aCode = d[i].charCodeAt(0);
-        let a;
-        if (h > aCode)      a = d[i];
-        else if (e[aCode])  a = e[aCode];
-        else                a = f + c;
-        g.push(a);
-        c = a[0];
-        e[o] = f + c;
-        o++;
-        f = a;
-    }
-    try { return JSON.parse(g.join('')); } catch(e) { return null; }
+    // Essai 1 : JSON direct
+    try {
+        const parsed = JSON.parse(data);
+        if (parsed && (parsed.lat !== undefined || parsed.time !== undefined)) return parsed;
+    } catch(e) {}
+
+    // Essai 2 : décodage LZW Blitzortung
+    try {
+        const str = typeof data === 'string' ? data : data.toString();
+        if (!str || str.length === 0) return null;
+
+        const dict = {};
+        let currChar = str[0];
+        let oldPhrase = currChar;
+        const out = [currChar];
+        let code = 256;
+        let phrase;
+
+        for (let i = 1; i < str.length; i++) {
+            const currCode = str.charCodeAt(i);
+            if (currCode < 256) {
+                phrase = str[i];
+            } else {
+                phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
+            }
+            out.push(phrase);
+            currChar = phrase[0];
+            dict[code] = oldPhrase + currChar;
+            code++;
+            oldPhrase = phrase;
+        }
+        const result = out.join('');
+        return JSON.parse(result);
+    } catch(e) {}
+
+    return null;
 }
 
 // ── Connexion Blitzortung WebSocket ───────────────────────────
@@ -116,51 +137,62 @@ function connectBlitzortung() {
         lastSeen = new Date();
         const str = data.toString();
 
-        // Essai JSON direct
-        let strike = null;
-        try { strike = JSON.parse(str); } catch(e) {
-            // Essai décodage obfuscation
-            strike = blitzDecode(str);
+        // Garde les 5 derniers messages bruts pour debug
+        lastRaw = str.slice(0, 200);
+        rawMessages.unshift({ ts: new Date().toISOString(), raw: str.slice(0, 100), len: str.length });
+        if (rawMessages.length > 5) rawMessages = rawMessages.slice(0, 5);
+
+        // Essai décodage
+        const strike = blitzDecode(str);
+
+        if (!strike) {
+            console.log(`Message non décodé (${str.length} chars): ${str.slice(0,50)}`);
+            return;
         }
 
-        if (!strike || !strike.lat || !strike.lon) return;
-
-        const sLat = parseFloat(strike.lat);
-        const sLon = parseFloat(strike.lon);
+        // Support différents formats Blitzortung
+        const sLat = parseFloat(strike.lat || (strike.location && strike.location.lat) || 0);
+        const sLon = parseFloat(strike.lon || (strike.location && strike.location.lon) || 0);
         const ts   = strike.time ? Math.round(strike.time / 1e9) : Math.round(Date.now()/1000);
 
-        // Filtre bounding box large (France + alentours)
-        if (sLat < 43 || sLat > 48 || sLon < 3 || sLon > 8) return;
+        if (!sLat || !sLon) {
+            console.log('Impact sans coordonnées:', JSON.stringify(strike).slice(0,100));
+            return;
+        }
+
+        console.log(`Impact brut reçu: lat=${sLat} lon=${sLon}`);
+
+        // Filtre bounding box Europe
+        if (sLat < 35 || sLat > 72 || sLon < -15 || sLon > 40) return;
 
         const dist = haversine(CENTER_LAT, CENTER_LON, sLat, sLon);
-        if (dist > RADIUS_KM) return;
+        if (dist > RADIUS_KM) {
+            console.log(`Impact hors périmètre: ${dist.toFixed(0)} km`);
+            return;
+        }
 
         const brng  = bearing(CENTER_LAT, CENTER_LON, sLat, sLon);
         const dir   = DIRS[Math.round(brng/22.5) % 16];
         const place = nearestPlace(sLat, sLon);
-        const id    = `bz_${sLat.toFixed(4)}_${sLon.toFixed(4)}_${ts}`;
+        const id    = `bz_${Math.round(sLat*1000)}_${Math.round(sLon*1000)}_${ts}`;
 
-        // Évite les doublons
         if (strikes.find(s => s.id === id)) return;
 
         const s = {
-            id,
-            ts,
-            datetime:  new Date(ts*1000).toISOString().replace('T',' ').replace('Z',''),
+            id, ts,
+            datetime:  new Date(ts*1000).toISOString().replace('T',' ').slice(0,19),
             dist_km:   Math.round(dist*10)/10,
             bearing:   Math.round(brng*10)/10,
-            dir,
-            place,
-            lat:       Math.round(sLat*100000)/100000,
-            lon:       Math.round(sLon*100000)/100000,
-            source:    'blitzortung-ws',
-            pol:       strike.pol ?? 0,
+            dir, place,
+            lat: Math.round(sLat*100000)/100000,
+            lon: Math.round(sLon*100000)/100000,
+            source: 'blitzortung-ws',
+            pol: strike.pol ?? 0,
         };
 
         strikes.unshift(s);
         if (strikes.length > MAX_STRIKES) strikes = strikes.slice(0, MAX_STRIKES);
-
-        console.log(`⚡ ${place} · ${s.dist_km} km ${dir} · ${s.datetime}`);
+        console.log(`⚡ IMPACT DÉTECTÉ: ${place} · ${s.dist_km} km ${dir}`);
     });
 
     ws.on('close', () => {
@@ -171,7 +203,7 @@ function connectBlitzortung() {
 
     ws.on('error', (err) => {
         connected = false;
-        console.error(`[${new Date().toISOString()}] Erreur WS:`, err.message);
+        console.error(`Erreur WS:`, err.message);
     });
 }
 
@@ -182,8 +214,19 @@ app.use(function(req, res, next) {
     next();
 });
 
+app.get('/debug', function(req, res) {
+    res.end(JSON.stringify({
+        connected,
+        last_seen: lastSeen,
+        total_strikes: strikes.length,
+        last_raw_length: lastRaw ? lastRaw.length : 0,
+        last_raw_preview: lastRaw ? lastRaw.slice(0, 150) : null,
+        recent_messages: rawMessages,
+    }, null, 2));
+});
+
 app.get('/', function(req, res) {
-    res.end(JSON.stringify({ name: 'Blitzortung Proxy', version: '1.0', endpoints: ['/strikes', '/health'] }));
+    res.end(JSON.stringify({ name: 'Blitzortung Proxy', version: '2.0', endpoints: ['/strikes', '/health', '/debug'] }));
 });
 
 app.get('/health', function(req, res) {
