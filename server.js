@@ -3,8 +3,8 @@ const express   = require('express');
 const app       = express();
 const PORT      = process.env.PORT || 3000;
 
-const CENTER_LAT  = 45.57;
-const CENTER_LON  = 5.52;
+const CENTER_LAT  = 45.5509;
+const CENTER_LON  = 5.3407;
 const RADIUS_KM   = 40;
 const MAX_STRIKES = 500;
 
