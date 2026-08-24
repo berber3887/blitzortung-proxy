@@ -1,7 +1,7 @@
 # Blitzortung Proxy — Sérezin-de-la-Tour
 
 Serveur Node.js qui se connecte au WebSocket Blitzortung et expose une API REST
-pour récupérer les vrais impacts de foudre dans les 40 km autour de Sérezin-de-la-Tour.
+pour récupérer les vrais impacts de foudre dans les 15 km autour de Sérezin-de-la-Tour.
 
 ## Déploiement sur Render.com (gratuit)
 
