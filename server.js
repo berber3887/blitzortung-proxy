@@ -32,29 +32,64 @@ function bearing(lat1,lon1,lat2,lon2){
 
 const DIRS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
 const PLACES=[
-    {n:'Sérezin-de-la-Tour',lat:45.5509,lon:5.3407},
-    {n:'La Tour-du-Pin',lat:45.5736,lon:5.4414},
-    {n:'Bourgoin-Jallieu',lat:45.5853,lon:5.2686},
-    {n:"L'Isle-d'Abeau",lat:45.6167,lon:5.2333},
-    {n:'Morestel',lat:45.6728,lon:5.4669},
-    {n:'Saint-Chef',lat:45.6253,lon:5.3897},
-    {n:'Dolomieu',lat:45.6072,lon:5.4875},
-    {n:'Crémieu',lat:45.7303,lon:5.2536},
-    {n:'Vienne',lat:45.5253,lon:4.8753},
-    {n:'Voiron',lat:45.3653,lon:5.5903},
-    {n:'Pont-de-Beauvoisin',lat:45.5353,lon:5.6653},
-    {n:'Champier',lat:45.4703,lon:5.3303},
-    {n:'Montalieu-Vercieu',lat:45.8203,lon:5.4103},
-    {n:'Belley',lat:45.7603,lon:5.6853},
-    {n:'Ambérieu-en-Bugey',lat:45.9603,lon:5.3603},
-    {n:'Grenoble',lat:45.1883,lon:5.7243},
-    {n:'Chambéry',lat:45.5643,lon:5.9173},
-    {n:'Bourg-en-Bresse',lat:46.2053,lon:5.2253},
-    {n:'Aix-les-Bains',lat:45.6883,lon:5.9123},
-    {n:'Lac de Paladru',lat:45.4503,lon:5.5203},
-    {n:'Villefontaine',lat:45.6103,lon:5.1503},
-    {n:'Meximieux',lat:45.9063,lon:5.1943},
-    {n:'Forêt de Bonnevaux',lat:45.5103,lon:5.2003},
+    // ── Centre ──────────────────────────────────────────────
+    {n:'Sérezin-de-la-Tour',          lat:45.5509,lon:5.3407}, // 0 km
+    // ── < 5 km ──────────────────────────────────────────────
+    {n:'Biol',                         lat:45.5420,lon:5.3750}, // ~3 km SE
+    {n:'Rochetoirin',                  lat:45.5680,lon:5.3900}, // ~3 km NE
+    {n:'Maubec',                       lat:45.5520,lon:5.3800}, // ~3 km E
+    {n:'Montrevel',                    lat:45.5580,lon:5.3950}, // ~4 km ENE
+    {n:'Châteauvilain',                lat:45.5100,lon:5.3450}, // ~5 km S
+    {n:'Saint-Didier-de-la-Tour',      lat:45.5630,lon:5.4100}, // ~5 km ENE
+    // ── 5 à 8 km ────────────────────────────────────────────
+    {n:'La Chapelle-de-la-Tour',       lat:45.5820,lon:5.4000}, // ~5 km NE
+    {n:'Fitilieu',                     lat:45.5150,lon:5.4020}, // ~6 km SE
+    {n:'Commelle',                     lat:45.5280,lon:5.4100}, // ~6 km ESE
+    {n:'Saint-Agnin-sur-Bion',         lat:45.5480,lon:5.2580}, // ~7 km W
+    {n:'Saint-Savin',                  lat:45.5350,lon:5.2850}, // ~6 km W
+    {n:'Sillans',                      lat:45.5030,lon:5.3100}, // ~6 km SW
+    {n:'Ruy-Montceau',                 lat:45.5880,lon:5.2620}, // ~7 km NW
+    {n:'Cessieu',                      lat:45.6030,lon:5.4180}, // ~7 km NNE
+    {n:'Vasselin',                     lat:45.6080,lon:5.3100}, // ~7 km N
+    {n:'Saint-Baudille-de-la-Tour',    lat:45.6100,lon:5.3900}, // ~7 km N
+    {n:'Saint-Hilaire-de-la-Côte',     lat:45.4980,lon:5.2920}, // ~7 km SW
+    {n:'La Tour-du-Pin',               lat:45.5736,lon:5.4414}, // ~8 km ENE
+    {n:'Charette',                     lat:45.6200,lon:5.3380}, // ~8 km N
+    {n:'Chélieu',                      lat:45.5150,lon:5.4250}, // ~8 km SE
+    {n:'Saint-Chef',                   lat:45.6253,lon:5.3897}, // ~8 km N
+    {n:'Bourgoin-Jallieu',             lat:45.5853,lon:5.2686}, // ~7 km NW
+    // ── 8 à 12 km ───────────────────────────────────────────
+    {n:'Corbelin',                     lat:45.5750,lon:5.4480}, // ~9 km ENE
+    {n:'Nantoin',                      lat:45.5330,lon:5.4580}, // ~9 km E
+    {n:'Torchefelon',                  lat:45.5950,lon:5.4370}, // ~9 km NE
+    {n:'Penol',                        lat:45.4750,lon:5.3430}, // ~9 km S
+    {n:'Champier',                     lat:45.4703,lon:5.3303}, // ~9 km S
+    {n:'Châbons',                      lat:45.4800,lon:5.3480}, // ~9 km S
+    {n:'Succieu',                      lat:45.4900,lon:5.2610}, // ~9 km SW
+    {n:'Longechenal',                  lat:45.4800,lon:5.2900}, // ~9 km SW
+    {n:'Gillonnay',                    lat:45.4670,lon:5.3080}, // ~10 km S
+    {n:'Veyrins-Thuellin',             lat:45.6280,lon:5.3870}, // ~9 km N
+    {n:'Brangues',                     lat:45.6200,lon:5.4400}, // ~10 km NNE
+    {n:'Saint-Jean-de-Soudain',        lat:45.5820,lon:5.4580}, // ~10 km ENE
+    {n:'Saint-Sorlin-de-Morestel',     lat:45.6400,lon:5.4000}, // ~10 km NNE
+    {n:"L'Isle-d'Abeau",               lat:45.6167,lon:5.2333}, // ~11 km NW
+    {n:'Vézeronce-Curtin',             lat:45.6380,lon:5.3000}, // ~10 km N
+    {n:'Izeaux',                       lat:45.4720,lon:5.2820}, // ~10 km SW
+    {n:'La Bâtie-Montgascon',          lat:45.6080,lon:5.4500}, // ~11 km NE
+    {n:'Panossas',                     lat:45.6520,lon:5.2900}, // ~12 km N
+    {n:'Trept',                        lat:45.6520,lon:5.3280}, // ~11 km N
+    {n:'Sermérieu',                    lat:45.6430,lon:5.4200}, // ~12 km NNE
+    {n:'Saint-Victor-de-Morestel',     lat:45.6380,lon:5.4380}, // ~12 km NNE
+    // ── 12 à 15 km ──────────────────────────────────────────
+    {n:'Faramans',                     lat:45.4530,lon:5.2820}, // ~12 km SW
+    {n:'Saint-Pierre-de-Bressieux',    lat:45.4470,lon:5.3150}, // ~12 km S
+    {n:'Vignieu',                      lat:45.6300,lon:5.4600}, // ~13 km NE
+    {n:'Siccieu-Saint-Julien',         lat:45.6680,lon:5.3620}, // ~13 km N
+    {n:'Dolomieu',                     lat:45.6072,lon:5.4875}, // ~13 km NE
+    {n:'Optevoz',                      lat:45.6720,lon:5.3020}, // ~14 km N
+    {n:'Bénonces',                     lat:45.6620,lon:5.4170}, // ~14 km NNE
+    {n:'Passins',                      lat:45.6520,lon:5.4580}, // ~14 km NNE
+    {n:'Annoisin-Chatelans',           lat:45.6720,lon:5.4180}, // ~15 km NNE
 ];
 
 function nearestPlace(lat,lon){
@@ -101,8 +136,9 @@ function toParisMonth(ts){
 // ── Xweather API — vrais kA ───────────────────────────────────
 function fetchXweather(){
     const now = Date.now();
-    if(now - xwLastFetch < 4*60*1000) return; // max 1 fois/4min
+    if(now - xwLastFetch < 2*60*1000) return; // max 1 appel par 2 min pendant orage
     xwLastFetch = now;
+    console.log('[Xweather] Appel déclenché par impact Blitzortung...');
 
     const url = `https://api.aerisapi.com/lightning/${CENTER_LAT},${CENTER_LON}?radius=${RADIUS_KM}km&limit=100&client_id=${XW_CLIENT_ID}&client_secret=${XW_SECRET}`;
 
@@ -243,7 +279,7 @@ function connectBlitzortung(){
         const dist=haversine(CENTER_LAT,CENTER_LON,sLat,sLon);
         if(dist>RADIUS_KM)return;
 
-        // Déclenche fetch Xweather pour avoir les vrais kA
+        // Déclenche Xweather UNIQUEMENT si impact détecté dans les 15km
         fetchXweather();
 
         const brng=bearing(CENTER_LAT,CENTER_LON,sLat,sLon);
@@ -322,9 +358,8 @@ function keepAlive(){
 app.listen(PORT,'0.0.0.0',()=>{
     console.log(`Serveur démarré port ${PORT}`);
     connectBlitzortung();
-    // Fetch Xweather toutes les 5 min
-    setInterval(fetchXweather, 5*60*1000);
-    // Keep-alive toutes les 10 min
+    // Keep-alive toutes les 10 min uniquement
     setInterval(keepAlive, 10*60*1000);
     setTimeout(keepAlive, 60*1000);
+    console.log('Xweather : appel uniquement sur détection impact Blitzortung dans les 15km');
 });
