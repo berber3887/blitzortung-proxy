@@ -32,64 +32,74 @@ function bearing(lat1,lon1,lat2,lon2){
 
 const DIRS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
 const PLACES=[
-    // ── Centre ──────────────────────────────────────────────
-    {n:'Sérezin-de-la-Tour',          lat:45.5509,lon:5.3407}, // 0 km
-    // ── < 5 km ──────────────────────────────────────────────
-    {n:'Biol',                         lat:45.5420,lon:5.3750}, // ~3 km SE
-    {n:'Rochetoirin',                  lat:45.5680,lon:5.3900}, // ~3 km NE
-    {n:'Maubec',                       lat:45.5520,lon:5.3800}, // ~3 km E
-    {n:'Montrevel',                    lat:45.5580,lon:5.3950}, // ~4 km ENE
-    {n:'Châteauvilain',                lat:45.5100,lon:5.3450}, // ~5 km S
-    {n:'Saint-Didier-de-la-Tour',      lat:45.5630,lon:5.4100}, // ~5 km ENE
-    // ── 5 à 8 km ────────────────────────────────────────────
-    {n:'La Chapelle-de-la-Tour',       lat:45.5820,lon:5.4000}, // ~5 km NE
-    {n:'Fitilieu',                     lat:45.5150,lon:5.4020}, // ~6 km SE
-    {n:'Commelle',                     lat:45.5280,lon:5.4100}, // ~6 km ESE
-    {n:'Saint-Agnin-sur-Bion',         lat:45.5480,lon:5.2580}, // ~7 km W
-    {n:'Saint-Savin',                  lat:45.5350,lon:5.2850}, // ~6 km W
-    {n:'Sillans',                      lat:45.5030,lon:5.3100}, // ~6 km SW
-    {n:'Ruy-Montceau',                 lat:45.5880,lon:5.2620}, // ~7 km NW
-    {n:'Cessieu',                      lat:45.6030,lon:5.4180}, // ~7 km NNE
-    {n:'Vasselin',                     lat:45.6080,lon:5.3100}, // ~7 km N
-    {n:'Saint-Baudille-de-la-Tour',    lat:45.6100,lon:5.3900}, // ~7 km N
-    {n:'Saint-Hilaire-de-la-Côte',     lat:45.4980,lon:5.2920}, // ~7 km SW
-    {n:'La Tour-du-Pin',               lat:45.5736,lon:5.4414}, // ~8 km ENE
-    {n:'Charette',                     lat:45.6200,lon:5.3380}, // ~8 km N
-    {n:'Chélieu',                      lat:45.5150,lon:5.4250}, // ~8 km SE
-    {n:'Saint-Chef',                   lat:45.6253,lon:5.3897}, // ~8 km N
-    {n:'Bourgoin-Jallieu',             lat:45.5853,lon:5.2686}, // ~7 km NW
-    // ── 8 à 12 km ───────────────────────────────────────────
-    {n:'Corbelin',                     lat:45.5750,lon:5.4480}, // ~9 km ENE
-    {n:'Nantoin',                      lat:45.5330,lon:5.4580}, // ~9 km E
-    {n:'Torchefelon',                  lat:45.5950,lon:5.4370}, // ~9 km NE
-    {n:'Penol',                        lat:45.4750,lon:5.3430}, // ~9 km S
-    {n:'Champier',                     lat:45.4703,lon:5.3303}, // ~9 km S
-    {n:'Châbons',                      lat:45.4800,lon:5.3480}, // ~9 km S
-    {n:'Succieu',                      lat:45.4900,lon:5.2610}, // ~9 km SW
-    {n:'Longechenal',                  lat:45.4800,lon:5.2900}, // ~9 km SW
-    {n:'Gillonnay',                    lat:45.4670,lon:5.3080}, // ~10 km S
-    {n:'Veyrins-Thuellin',             lat:45.6280,lon:5.3870}, // ~9 km N
-    {n:'Brangues',                     lat:45.6200,lon:5.4400}, // ~10 km NNE
-    {n:'Saint-Jean-de-Soudain',        lat:45.5820,lon:5.4580}, // ~10 km ENE
-    {n:'Saint-Sorlin-de-Morestel',     lat:45.6400,lon:5.4000}, // ~10 km NNE
-    {n:"L'Isle-d'Abeau",               lat:45.6167,lon:5.2333}, // ~11 km NW
-    {n:'Vézeronce-Curtin',             lat:45.6380,lon:5.3000}, // ~10 km N
-    {n:'Izeaux',                       lat:45.4720,lon:5.2820}, // ~10 km SW
-    {n:'La Bâtie-Montgascon',          lat:45.6080,lon:5.4500}, // ~11 km NE
-    {n:'Panossas',                     lat:45.6520,lon:5.2900}, // ~12 km N
-    {n:'Trept',                        lat:45.6520,lon:5.3280}, // ~11 km N
-    {n:'Sermérieu',                    lat:45.6430,lon:5.4200}, // ~12 km NNE
-    {n:'Saint-Victor-de-Morestel',     lat:45.6380,lon:5.4380}, // ~12 km NNE
-    // ── 12 à 15 km ──────────────────────────────────────────
-    {n:'Faramans',                     lat:45.4530,lon:5.2820}, // ~12 km SW
-    {n:'Saint-Pierre-de-Bressieux',    lat:45.4470,lon:5.3150}, // ~12 km S
-    {n:'Vignieu',                      lat:45.6300,lon:5.4600}, // ~13 km NE
-    {n:'Siccieu-Saint-Julien',         lat:45.6680,lon:5.3620}, // ~13 km N
-    {n:'Dolomieu',                     lat:45.6072,lon:5.4875}, // ~13 km NE
-    {n:'Optevoz',                      lat:45.6720,lon:5.3020}, // ~14 km N
-    {n:'Bénonces',                     lat:45.6620,lon:5.4170}, // ~14 km NNE
-    {n:'Passins',                      lat:45.6520,lon:5.4580}, // ~14 km NNE
-    {n:'Annoisin-Chatelans',           lat:45.6720,lon:5.4180}, // ~15 km NNE
+    {n:'Sérezin-de-la-Tour',        lat:45.5554,lon:5.3483},
+    {n:'Cessieu',                    lat:45.5694,lon:5.3746},
+    {n:'Succieu',                    lat:45.5285,lon:5.3416},
+    {n:'Saint-Victor-de-Cessieu',   lat:45.5379,lon:5.3814},
+    {n:'Nivolas-Vermelle',           lat:45.5638,lon:5.3084},
+    {n:'Ruy-Montceau',               lat:45.5881,lon:5.3482},
+    {n:'Châteauvilain',              lat:45.5142,lon:5.3318},
+    {n:'Les Éparres',                lat:45.5371,lon:5.2908},
+    {n:'Meyrié',                     lat:45.5606,lon:5.2834},
+    {n:'Torchefelon',                lat:45.5172,lon:5.3984},
+    {n:'Rochetoirin',                lat:45.5854,lon:5.4140},
+    {n:'Biol',                       lat:45.4971,lon:5.3674},
+    {n:'Sainte-Blandine',            lat:45.5450,lon:5.4360},
+    {n:'Maubec',                     lat:45.5677,lon:5.2583},
+    {n:'Montcarra',                  lat:45.6091,lon:5.4017},
+    {n:'Eclose-Badinières',          lat:45.4998,lon:5.2987},
+    {n:'Saint-Jean-de-Soudain',      lat:45.5842,lon:5.4350},
+    {n:'Bourgoin-Jallieu',           lat:45.6025,lon:5.2747},
+    {n:'Tramolé',                    lat:45.5153,lon:5.2656},
+    {n:'La Tour-du-Pin',             lat:45.5743,lon:5.4459},
+    {n:'Domarin',                    lat:45.5827,lon:5.2491},
+    {n:'Saint-Savin',                lat:45.6282,lon:5.3216},
+    {n:'Culin',                      lat:45.5215,lon:5.2493},
+    {n:'Doissin',                    lat:45.4990,lon:5.4248},
+    {n:'Montagnieu',                 lat:45.5268,lon:5.4549},
+    {n:'Saint-Agnin-sur-Bion',       lat:45.5370,lon:5.2360},
+    {n:'Belmont',                    lat:45.4724,lon:5.3602},
+    {n:'Saint-Chef',                 lat:45.6401,lon:5.3619},
+    {n:'Flachères',                  lat:45.4686,lon:5.3159},
+    {n:'Montrevel',                  lat:45.4764,lon:5.4095},
+    {n:'Crachier',                   lat:45.5462,lon:5.2194},
+    {n:'Vignieu',                    lat:45.6315,lon:5.4227},
+    {n:'Saint-Alban-de-Roche',       lat:45.5889,lon:5.2243},
+    {n:'Chèzeneuve',                 lat:45.5617,lon:5.2151},
+    {n:'Saint-Didier-de-Bizonnes',   lat:45.4599,lon:5.3437},
+    {n:'Sainte-Anne-sur-Gervonde',   lat:45.4998,lon:5.2354},
+    {n:'Saint-Clair-de-la-Tour',     lat:45.5717,lon:5.4863},
+    {n:'La Chapelle-de-la-Tour',     lat:45.5913,lon:5.4788},
+    {n:'Saint-Didier-de-la-Tour',    lat:45.5446,lon:5.4877},
+    {n:'Vasselin',                   lat:45.6293,lon:5.4504},
+    {n:'Chélieu',                    lat:45.5046,lon:5.4771},
+    {n:'Blandin',                    lat:45.4791,lon:5.4487},
+    {n:"L'Isle-d'Abeau",             lat:45.6153,lon:5.2234},
+    {n:'Champier',                   lat:45.4578,lon:5.2861},
+    {n:'Four',                       lat:45.5726,lon:5.1960},
+    {n:'Dolomieu',                   lat:45.6179,lon:5.4759},
+    {n:'Bizonnes',                   lat:45.4480,lon:5.3777},
+    {n:'Meyrieu-les-Étangs',         lat:45.5156,lon:5.2014},
+    {n:'Eydoche',                    lat:45.4439,lon:5.3355},
+    {n:'Vénérieu',                   lat:45.6593,lon:5.2785},
+    {n:'Saint-Sorlin-de-Morestel',   lat:45.6320,lon:5.4716},
+    {n:'Salagnon',                   lat:45.6717,lon:5.3523},
+    {n:'Châtonnay',                  lat:45.4784,lon:5.2225},
+    {n:'Val-de-Virieu',              lat:45.4760,lon:5.4716},
+    {n:'Saint-Marcel-Bel-Accueil',   lat:45.6502,lon:5.2419},
+    {n:'Le Passage',                 lat:45.5265,lon:5.5157},
+    {n:'Châbons',                    lat:45.4477,lon:5.4280},
+    {n:'Faverges-de-la-Tour',        lat:45.5952,lon:5.5121},
+    {n:'La Bâtie-Montgascon',         lat:45.6080,lon:5.4500},
+    {n:'Sermérieu',                  lat:45.6689,lon:5.4123},
+    {n:'Artas',                      lat:45.5385,lon:5.1676},
+    {n:'Chassignieu',                lat:45.5014,lon:5.5138},
+    {n:'Saint-Hilaire-de-Brens',     lat:45.6770,lon:5.2913},
+    {n:'Vaulx-Milieu',               lat:45.6174,lon:5.1868},
+    {n:'Vézeronce-Curtin',           lat:45.6534,lon:5.4690},
+    {n:'Saint-André-le-Gaz',         lat:45.5477,lon:5.5336},
+    {n:'Longechenal',                lat:45.4238,lon:5.3618},
+    {n:'Trept',                      lat:45.6864,lon:5.3239},
 ];
 
 function nearestPlace(lat,lon){
@@ -98,7 +108,7 @@ function nearestPlace(lat,lon){
         const d=Math.sqrt(Math.pow((lat-p.lat)*111,2)+Math.pow((lon-p.lon)*78,2));
         if(d<bd){bd=d;best=p.n;}
     }
-    return bd<12?best:`${lat.toFixed(3)}N ${lon.toFixed(3)}E`;
+    return bd<20?best:`${lat.toFixed(3)}N ${lon.toFixed(3)}E`;
 }
 
 // Intensité basée sur kA réels (Xweather) ou mds (Blitzortung fallback)
