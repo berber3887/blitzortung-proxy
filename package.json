@@ -1,13 +1,19 @@
 {
   "name": "blitzortung-proxy",
-  "version": "2.0.0",
-  "description": "Blitzortung proxy pour Sérezin-de-la-Tour",
+  "version": "5.0.0",
+  "description": "Proxy Blitzortung WebSocket + Xweather kA — Sérezin-de-la-Tour 15km",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "ws": "^8.18.0",
-    "express": "^4.18.2"
-  }
+    "ws": "^8.21.3",
+    "express": "^5.2.1"
+  },
+  "keywords": ["blitzortung", "lightning", "foudre", "meteo", "xweather"],
+  "author": "Beber — meteoserezindelatour.fr",
+  "license": "MIT"
 }
