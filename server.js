@@ -172,9 +172,20 @@ function fetchXweather(){
                     const sLat = parseFloat(loc.lat);
                     const sLon = parseFloat(loc.long);
                     const ts   = ob.timestamp || Math.round(Date.now()/1000);
-                    const kA   = ob.pulse ? Math.round(ob.pulse.peakamp/1000) : 0; // peakamp en A → kA
-                    const pol  = kA >= 0 ? 1 : -1;
-                    const type = ob.pulse ? ob.pulse.type : 'cg'; // cg=cloud-to-ground, ic=intracloud
+
+                    // Extraction kA — différents noms de champs possibles selon version API
+                    let kARaw = 0;
+                    if (ob.pulse) {
+                        kARaw = ob.pulse.peakamp || ob.pulse.peakAmp || ob.pulse.peakCurrent || 0;
+                    } else if (ob.peakamp) {
+                        kARaw = ob.peakamp;
+                    } else if (ob.peakAmp) {
+                        kARaw = ob.peakAmp;
+                    }
+                    // La valeur est en Ampères si > 1000, sinon peut être en kA directement
+                    const kA = Math.abs(kARaw) > 1000 ? Math.round(Math.abs(kARaw)/1000) : Math.round(Math.abs(kARaw));
+                    const pol  = kARaw >= 0 ? 1 : -1;
+                    const type = ob.pulse ? (ob.pulse.type||'cg') : (ob.type||'cg');
 
                     const dist  = haversine(CENTER_LAT,CENTER_LON,sLat,sLon);
                     if(dist > RADIUS_KM) return;
@@ -182,31 +193,57 @@ function fetchXweather(){
                     const brng  = bearing(CENTER_LAT,CENTER_LON,sLat,sLon);
                     const dir   = DIRS[Math.round(brng/22.5)%16];
                     const place = nearestPlace(sLat,sLon);
-                    const id    = `xw_${Math.round(sLat*10000)}_${Math.round(sLon*10000)}_${ts}`;
-
-                    if(strikes.find(s=>s.id===id)) return;
-
                     const intensity = getIntensity(kA);
-                    const s = {
-                        id, ts,
-                        datetime: toParisDatetime(ts),
-                        dist_km:  Math.round(dist*10)/10,
-                        bearing:  Math.round(brng*10)/10,
-                        dir, place,
-                        lat: Math.round(sLat*100000)/100000,
-                        lon: Math.round(sLon*100000)/100000,
-                        source: 'xweather',
-                        ka:   Math.abs(kA),
-                        pol,
-                        type: type === 'cg' ? 'Nuage-sol' : 'Intra-nuageux',
-                        intensity_level: intensity.level,
-                        intensity_label: intensity.label,
-                        intensity_icon:  intensity.icon,
-                        intensity_desc:  intensity.desc,
-                    };
-                    strikes.unshift(s);
-                    newCount++;
-                    console.log(`⚡ [Xweather] ${place} · ${s.dist_km}km ${dir} · ${Math.abs(kA)}kA · ${intensity.icon} ${intensity.label}`);
+                    const typeLabel = (type==='cg'||type==='cloud-to-ground') ? 'Nuage-sol' : 'Intra-nuageux';
+
+                    // Cherche un impact Blitzortung existant proche (même zone, ±60s)
+                    let matched = false;
+                    for (let i = 0; i < strikes.length; i++) {
+                        const s = strikes[i];
+                        const timeDiff = Math.abs(s.ts - ts);
+                        const distDiff = haversine(s.lat, s.lon, sLat, sLon);
+                        if (timeDiff < 60 && distDiff < 2) {
+                            // Mise à jour du kA sur l'impact existant
+                            if (kA > 0) {
+                                strikes[i].ka              = kA;
+                                strikes[i].pol             = pol;
+                                strikes[i].type            = typeLabel;
+                                strikes[i].intensity_level = intensity.level;
+                                strikes[i].intensity_label = intensity.label;
+                                strikes[i].intensity_icon  = intensity.icon;
+                                strikes[i].intensity_desc  = intensity.desc;
+                                console.log(`⚡ [Xweather] MAJ kA: ${strikes[i].place} · ${kA}kA · ${intensity.icon}`);
+                            }
+                            matched = true;
+                            newCount++;
+                            break;
+                        }
+                    }
+
+                    // Si pas de correspondance, ajoute comme nouveau
+                    if (!matched) {
+                        const id = `xw_${Math.round(sLat*10000)}_${Math.round(sLon*10000)}_${ts}`;
+                        if (strikes.find(s=>s.id===id)) return;
+                        const s = {
+                            id, ts,
+                            datetime: toParisDatetime(ts),
+                            dist_km:  Math.round(dist*10)/10,
+                            bearing:  Math.round(brng*10)/10,
+                            dir, place,
+                            lat: Math.round(sLat*100000)/100000,
+                            lon: Math.round(sLon*100000)/100000,
+                            source: 'xweather',
+                            ka: kA, pol,
+                            type: typeLabel,
+                            intensity_level: intensity.level,
+                            intensity_label: intensity.label,
+                            intensity_icon:  intensity.icon,
+                            intensity_desc:  intensity.desc,
+                        };
+                        strikes.unshift(s);
+                        newCount++;
+                        console.log(`⚡ [Xweather] Nouveau: ${place} · ${dist.toFixed(1)}km ${dir} · ${kA}kA`);
+                    }
                 });
 
                 if(strikes.length > MAX_STRIKES) strikes = strikes.slice(0, MAX_STRIKES);
@@ -289,8 +326,8 @@ function connectBlitzortung(){
         const dist=haversine(CENTER_LAT,CENTER_LON,sLat,sLon);
         if(dist>RADIUS_KM)return;
 
-        // Déclenche Xweather UNIQUEMENT si impact détecté dans les 15km
-        fetchXweather();
+        // Déclenche Xweather après 15s — laisse le temps au réseau BLIDS de traiter l'impact
+        setTimeout(fetchXweather, 15000);
 
         const brng=bearing(CENTER_LAT,CENTER_LON,sLat,sLon);
         const dir=DIRS[Math.round(brng/22.5)%16];
